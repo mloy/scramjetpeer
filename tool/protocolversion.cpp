@@ -5,7 +5,8 @@
 #include "boost/asio.hpp"
 
 
-// connect to a scramjet daemon, receive and print the protocol version and disconnect
+/// connect to a scramjet daemon, receive and print the protocol version and disconnect
+/// \warning we expect do run on a little endian machine!
 int main(int argc, char* argv[])
 {
 	// some defaults that may be overriden by parameter <address>:<port>
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
 	boost::asio::ip::tcp::resolver::results_type endpoints = r.resolve(address, port);
 	boost::asio::connect(socket, endpoints);
 
-	size_t reply_length;	
+	size_t reply_length;
 	struct ProtocolVersionData {
 		uint32_t major;
 		uint32_t minor;
@@ -39,21 +40,22 @@ int main(int argc, char* argv[])
 	};
 	
 	// gather both protocol parts (message type and version informartion) with one read
-	uint8_t messageType[1];
-	ProtocolVersionData protocolVersion[1];
-	
+	uint8_t messageType;
+	ProtocolVersionData protocolVersion;
+
+
 	std::array<boost::asio::mutable_buffer, 2> bufs = {
-		boost::asio::buffer(messageType),
-		boost::asio::buffer(protocolVersion) };
+		boost::asio::buffer(&messageType, sizeof(messageType)),
+		boost::asio::buffer(&protocolVersion, sizeof(protocolVersion)) };
 	reply_length = socket.receive(bufs);
 	
-	if (messageType[0]!=1) {
+	if (messageType!=1) {
 		std::cerr << "unexpected message type" << std::endl;
 	}
 	
-	std::cout << "major: " << protocolVersion[0].major << std::endl;
-	std::cout << "minor: " << protocolVersion[0].minor << std::endl;
-	std::cout << "patch: " << protocolVersion[0].patch << std::endl;
+	std::cout << "major: " << protocolVersion.major << std::endl;
+	std::cout << "minor: " << protocolVersion.minor << std::endl;
+	std::cout << "patch: " << protocolVersion.patch << std::endl;
 	
 	socket.close();
 	
