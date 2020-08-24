@@ -12,13 +12,13 @@ find_package(Boost)
 include_directories("include")
 
 set( SCRAMJETCPPEERLIB_INTERFACE_HEADERS
-	#    include/hbm/communication/ipv4address.h
+  include/bufferedreader.h
 )
 
 
 set(SCRAMJETCPPEERLIB_SOURCES
   ${SCRAMJETCPPEERLIB_INTERFACE_HEADERS}
-  scramjetpeer.cpp
+  src/bufferedreader.cpp
 )
 
 add_library(${PROJECT_NAME} ${SCRAMJETCPPEERLIB_SOURCES})

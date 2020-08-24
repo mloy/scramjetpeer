@@ -4,11 +4,41 @@
 
 #include "boost/asio.hpp"
 
+#include "../lib/include/scramjetpeer/bufferedreader.h"
+
 using MessageType = uint8_t;
 
 
 
-int checkprotocolVersion(boost::asio::ip::tcp::socket& socket)
+int checkprotocolVersionBuffered(scramjetpeer::BufferedReader& bufferedReader)
+{
+	struct ProtocolVersionData {
+		uint32_t major;
+		uint32_t minor;
+		uint32_t patch;
+	};
+	
+	MessageType messageType = 0;
+	ProtocolVersionData protocolVersion;
+	
+	bufferedReader.recv(&messageType, sizeof(messageType));
+	bufferedReader.recv(&protocolVersion, sizeof(protocolVersion));
+
+
+	if (messageType!=1) {
+		std::cerr << "unexpected message type " << static_cast < int > (messageType) << std::endl;
+		return -1;
+	}
+	
+	std::cout << "major: " << protocolVersion.major << std::endl;
+	std::cout << "minor: " << protocolVersion.minor << std::endl;
+	std::cout << "patch: " << protocolVersion.patch << std::endl;
+	return 0;
+
+}
+
+
+int checkprotocolVersionGathered(boost::asio::ip::tcp::socket& socket)
 {
 	struct ProtocolVersionData {
 		uint32_t major;
@@ -67,7 +97,12 @@ int main(int argc, char* argv[])
 	boost::asio::ip::tcp::resolver::results_type endpoints = r.resolve(address, port);
 	boost::asio::connect(socket, endpoints);
 
-	checkprotocolVersion(socket);
+	//checkprotocolVersionGathered(socket);
+	
+	scramjetpeer::BufferedReader bufferedReader(socket);
+	
+	checkprotocolVersionBuffered(bufferedReader);
+	
 	
 	socket.close();
 	
