@@ -31,30 +31,31 @@ int main(int argc, char* argv[])
 	boost::asio::ip::tcp::resolver::results_type endpoints = r.resolve(address, port);
 	boost::asio::connect(socket, endpoints);
 
-	size_t reply_length;
-
-
-	// now read ProtocolVersion
-	#pragma pack(push, 1)
+	size_t reply_length;	
 	struct ProtocolVersionData {
-		uint8_t messageType;
 		uint32_t major;
 		uint32_t minor;
 		uint32_t patch;
 	};
-	#pragma pack(pop)
 	
-	std::vector < ProtocolVersionData > data(1);
-
-	auto receiveBuffer = boost::asio::buffer(data);
-	reply_length = boost::asio::read(socket, receiveBuffer);
-	if (data[0].messageType!=1) {
+	// gather both protocol parts (message type and version informartion) with one read
+	uint8_t messageType[1];
+	ProtocolVersionData protocolVersion[1];
+	
+	std::array<boost::asio::mutable_buffer, 2> bufs = {
+		boost::asio::buffer(messageType),
+		boost::asio::buffer(protocolVersion) };
+	reply_length = socket.receive(bufs);
+	
+	if (messageType[0]!=1) {
 		std::cerr << "unexpected message type" << std::endl;
 	}
 	
-	std::cout << "major: " << data[0].major << std::endl;
-	std::cout << "minor: " << data[0].minor << std::endl;
-	std::cout << "patch: " << data[0].patch << std::endl;
+	std::cout << "major: " << protocolVersion[0].major << std::endl;
+	std::cout << "minor: " << protocolVersion[0].minor << std::endl;
+	std::cout << "patch: " << protocolVersion[0].patch << std::endl;
+	
+	socket.close();
 	
 	return EXIT_SUCCESS;
 }
